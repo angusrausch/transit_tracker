@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --surface: #16161a;
+            --accent: #7c4dff; /* Modern Purple */
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --column-tint: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #fff, #7c4dff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #error {
+            /* Overriding your inline red with a softer modern coral-red */
+            color: #ff5f5f !important;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 24px;
+            height: 1.2rem;
+        }
+
+        /* Container for the table */
+        div {
+            width: 100%;
+            max-width: 900px;
+            background: var(--surface);
+            padding: 12px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            font-weight: 700;
+        }
+
+        /* The "Obvious Column" Trick */
+        /* We apply a slight background to alternating columns instead of lines */
+        td:nth-child(even), 
+        th:nth-child(even) {
+            background-color: var(--column-tint);
+        }
+
+        /* Rounding the corners of the tinted columns */
+        th:nth-child(even) {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        td {
+            padding: 20px;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        /* Highlight the key info column */
+        td:first-child {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Remove border from last row */
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Hover effect for rows */
+        tbody tr:hover td {
+            color: var(--text-primary);
+            background-color: rgba(124, 77, 255, 0.08);
+        }
+
+        /* Clean "Empty" State styling */
+        #arrivals:empty::after {
+            content: "No upcoming transits found.";
+            display: block;
+            padding: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Transit Times</h1>
+    <h3 style="color: red;" id="error"></h3>
+
+    <div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Leave Home In</th>
+                    <th>Transit Due In</th>
+                    <th>Route</th>
+                    <th>Location</th>
+                    <th>Transit Type</th>
+                </tr>
+            </thead>
+            <tbody id="arrivals">
+                </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
+
+<script>
+    remoteHost = window.location.host;
+    remoteProtocol = window.location.protocol;
+    remoteLocation = remoteProtocol + "//" + remoteHost + "/data";
+
+    async function loadUpdates() {
+        try {
+            const response = await fetch(remoteLocation, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            if (response.ok) {
+                return response.json();
+            } else if (response.status === 404) {
+                document.getElementById("error").innerHTML = "Unable to retrieve updated times";
+                return -1;
+            }
+        } catch (error) {
+            console.error("Error loading values:", error);
+            document.getElementById("error").innerHTML = "Error fetching updated data";
+        }
+    }
+
+    async function updatePage() {
+        let updatedArrivals = await loadUpdates();
+
+        if (updatedArrivals === -1) {
+            return;
+        }
+
+        let updatedHtml = String();
+
+        updatedArrivals.forEach(function (arrival) {
+            updatedHtml += `
+            <tr>
+                <td>
+                    ${arrival.time_to_leave}
+                </td>
+                <td>
+                    ${arrival.time}
+                </td>
+                <td>
+                    ${arrival.route}
+                    </td>
+                    <td>
+                        ${arrival.stop}
+                    </td>
+                    <td>
+                        ${arrival.type}
+                    </td>
+            </tr>
+            `;
+        });
+
+        document.getElementById("arrivals").innerHTML = updatedHtml;
+    }
+
+    window.addEventListener('load', function () {
+        updatePage();
+        setInterval(updatePage, 30000);
+    });
+
+</script>

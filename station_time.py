@@ -18,7 +18,6 @@ def get_arrival_times(stops):
     now = time.time()
 
     try:
-        print(f"Refreshing live arrivals...")
         response = requests.get(URL, timeout=10)
         response.raise_for_status()
         feed.ParseFromString(response.content)
